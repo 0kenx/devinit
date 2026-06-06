@@ -27,7 +27,7 @@ Supported languages:
 ## Layout
 
 - `devinit`: Bash entrypoint.
-- `templates/optimized-pre-config-*`: Language templates.
+- `templates/{rust,python,solidity,typescript,elixir,zig,go}`: Language templates.
 - `templates/_lib`: Shared NixOS VM module and shared tools used by templates.
 
 By default the script loads templates relative to itself. You can override that

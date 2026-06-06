@@ -80,13 +80,13 @@ warn() {
 
 template_for_language() {
   case "$1" in
-    rust|rs) echo "optimized-pre-config-rust" ;;
-    python|py) echo "optimized-pre-config-python" ;;
-    solidity|sol) echo "optimized-pre-config-solidity" ;;
-    typescript|ts) echo "optimized-pre-config-typescript" ;;
-    elixir|ex) echo "optimized-pre-config-elixir" ;;
-    zig) echo "optimized-pre-config-zig" ;;
-    go|golang) echo "optimized-pre-config-go" ;;
+    rust|rs) echo "rust" ;;
+    python|py) echo "python" ;;
+    solidity|sol) echo "solidity" ;;
+    typescript|ts) echo "typescript" ;;
+    elixir|ex) echo "elixir" ;;
+    zig) echo "zig" ;;
+    go|golang) echo "go" ;;
     *) return 1 ;;
   esac
 }
