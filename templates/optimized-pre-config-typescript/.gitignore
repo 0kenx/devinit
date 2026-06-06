@@ -1,0 +1,25 @@
+# Bun / Node
+node_modules/
+bun.lockb
+bun.lock
+dist/
+build/
+.next/
+.cache/
+*.tsbuildinfo
+
+# Env / secrets
+.env
+.env.local
+
+# Nix / direnv
+.direnv/
+.devenv/
+result
+result-*
+
+# Editors
+.vscode/
+.idea/
+*.swp
+.DS_Store

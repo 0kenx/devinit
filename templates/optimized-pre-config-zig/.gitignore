@@ -1,0 +1,16 @@
+# Zig build outputs
+zig-out/
+zig-cache/
+.zig-cache/
+
+# Nix / direnv
+.direnv/
+.devenv/
+result
+result-*
+
+# Editors
+.vscode/
+.idea/
+*.swp
+.DS_Store

@@ -1,0 +1,322 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+resolve_script_dir() {
+  local source dir
+  source="${BASH_SOURCE[0]}"
+
+  while [ -h "$source" ]; do
+    dir="$(cd -P "$(dirname "$source")" >/dev/null 2>&1 && pwd)"
+    source="$(readlink "$source")"
+    case "$source" in
+      /*) ;;
+      *) source="$dir/$source" ;;
+    esac
+  done
+
+  cd -P "$(dirname "$source")" >/dev/null 2>&1 && pwd
+}
+
+SCRIPT_DIR="$(resolve_script_dir)"
+DEFAULT_TEMPLATES_DIR="$SCRIPT_DIR/templates"
+
+LANGUAGE=""
+TARGET_DIR="$PWD"
+TEMPLATES_DIR="${DEVINIT_TEMPLATES_DIR:-$DEFAULT_TEMPLATES_DIR}"
+ASSUME_YES=0
+RUN_GIT=1
+RUN_DIRENV=1
+LIST_ONLY=0
+
+usage() {
+  cat <<'EOF'
+Usage: devinit [options] <language>
+
+Create a development project from a local template.
+
+Languages:
+  rust, rs          Rust with crane, rust-overlay, sccache, mold
+  python, py        Python with uv and ruff
+  solidity, sol     Solidity with Foundry, Certora, Slither
+  typescript, ts    TypeScript on Bun with Biome
+  elixir, ex        Elixir / Erlang
+  zig               Zig with zig-overlay and ZLS
+  go, golang        Go with gopls and golangci-lint
+
+Options:
+  -t, --target DIR          Initialize DIR instead of the current directory
+      --templates-dir DIR   Use templates from DIR
+  -y, --yes                 Continue without prompting in non-empty directories
+      --no-git             Do not initialize/stage a git repository
+      --no-direnv          Do not run direnv allow
+  -l, --list                List supported languages
+  -h, --help                Show this help
+
+Environment:
+  DEVINIT_TEMPLATES_DIR     Override the default templates directory
+EOF
+}
+
+list_languages() {
+  cat <<'EOF'
+rust
+python
+solidity
+typescript
+elixir
+zig
+go
+EOF
+}
+
+die() {
+  printf 'devinit: %s\n' "$*" >&2
+  exit 1
+}
+
+warn() {
+  printf 'warning: %s\n' "$*" >&2
+}
+
+template_for_language() {
+  case "$1" in
+    rust|rs) echo "optimized-pre-config-rust" ;;
+    python|py) echo "optimized-pre-config-python" ;;
+    solidity|sol) echo "optimized-pre-config-solidity" ;;
+    typescript|ts) echo "optimized-pre-config-typescript" ;;
+    elixir|ex) echo "optimized-pre-config-elixir" ;;
+    zig) echo "optimized-pre-config-zig" ;;
+    go|golang) echo "optimized-pre-config-go" ;;
+    *) return 1 ;;
+  esac
+}
+
+canonical_language() {
+  case "$1" in
+    rust|rs) echo "rust" ;;
+    python|py) echo "python" ;;
+    solidity|sol) echo "solidity" ;;
+    typescript|ts) echo "typescript" ;;
+    elixir|ex) echo "elixir" ;;
+    zig) echo "zig" ;;
+    go|golang) echo "go" ;;
+    *) return 1 ;;
+  esac
+}
+
+parse_args() {
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      -l|--list)
+        LIST_ONLY=1
+        shift
+        ;;
+      -t|--target)
+        [ "$#" -ge 2 ] || die "$1 requires a directory"
+        TARGET_DIR="$2"
+        shift 2
+        ;;
+      --templates-dir)
+        [ "$#" -ge 2 ] || die "$1 requires a directory"
+        TEMPLATES_DIR="$2"
+        shift 2
+        ;;
+      -y|--yes)
+        ASSUME_YES=1
+        shift
+        ;;
+      --no-git)
+        RUN_GIT=0
+        shift
+        ;;
+      --no-direnv)
+        RUN_DIRENV=0
+        shift
+        ;;
+      --)
+        shift
+        break
+        ;;
+      -*)
+        die "unknown option: $1"
+        ;;
+      *)
+        if [ -n "$LANGUAGE" ]; then
+          die "unexpected extra argument: $1"
+        fi
+        LANGUAGE="$1"
+        shift
+        ;;
+    esac
+  done
+
+  if [ "$#" -gt 0 ]; then
+    if [ -n "$LANGUAGE" ]; then
+      die "unexpected extra argument: $1"
+    fi
+    LANGUAGE="$1"
+  fi
+}
+
+confirm_if_needed() {
+  local first_visible confirm
+
+  first_visible="$(find "$TARGET_DIR" -mindepth 1 -maxdepth 1 ! -name '.*' -print -quit 2>/dev/null || true)"
+  if [ -z "$first_visible" ]; then
+    return 0
+  fi
+
+  if [ "$ASSUME_YES" -eq 1 ]; then
+    return 0
+  fi
+
+  printf 'Current directory is not empty: %s\n' "$TARGET_DIR"
+  printf 'Template files will be copied into it. Continue? [y/N] '
+  read -r confirm
+  case "$confirm" in
+    y|Y|yes|YES) ;;
+    *) die "cancelled" ;;
+  esac
+}
+
+copy_template() {
+  local template_dir shared_lib
+
+  template_dir="$TEMPLATES_DIR/$1"
+  shared_lib="$TEMPLATES_DIR/_lib"
+
+  [ -d "$TEMPLATES_DIR" ] || die "templates directory not found: $TEMPLATES_DIR"
+  [ -d "$template_dir" ] || die "template directory not found: $template_dir"
+  [ -d "$shared_lib" ] || die "shared _lib directory not found: $shared_lib"
+
+  mkdir -p "$TARGET_DIR"
+  confirm_if_needed
+
+  printf 'Copying %s template into %s\n' "$LANGUAGE" "$TARGET_DIR"
+  cp -a "$template_dir"/. "$TARGET_DIR"/
+
+  printf 'Copying shared _lib\n'
+  mkdir -p "$TARGET_DIR/_lib"
+  cp -a "$shared_lib"/. "$TARGET_DIR/_lib"/
+}
+
+git_setup() {
+  [ "$RUN_GIT" -eq 1 ] || return 0
+
+  if ! command -v git >/dev/null 2>&1; then
+    warn "git not found; skipped repository initialization"
+    return 0
+  fi
+
+  if [ ! -d "$TARGET_DIR/.git" ]; then
+    printf 'Initializing git repository\n'
+    git -C "$TARGET_DIR" init
+  fi
+
+  printf 'Staging generated files\n'
+  git -C "$TARGET_DIR" add -A
+}
+
+direnv_setup() {
+  [ "$RUN_DIRENV" -eq 1 ] || return 0
+  [ -f "$TARGET_DIR/.envrc" ] || return 0
+
+  if ! command -v direnv >/dev/null 2>&1; then
+    warn "direnv not found; run 'direnv allow' manually"
+    return 0
+  fi
+
+  printf 'Activating direnv\n'
+  if ! (cd "$TARGET_DIR" && direnv allow); then
+    warn "direnv activation failed; run 'direnv allow' manually"
+  fi
+}
+
+print_next_steps() {
+  printf '\n%s development environment initialized in %s\n\n' "$LANGUAGE" "$TARGET_DIR"
+  printf 'Next steps:\n'
+
+  case "$LANGUAGE" in
+    rust)
+      printf '  1. just build               # Build project\n'
+      printf '  2. just test                # Run tests\n'
+      printf '  3. just vm                  # Spin up NixOS dev VM\n'
+      printf '  4. just                     # List all commands\n'
+      ;;
+    python)
+      printf '  1. just setup-project myapp # Create src/ structure\n'
+      printf '  2. just venv                # Create virtual environment\n'
+      printf '  3. source .venv/bin/activate.fish\n'
+      printf '  4. just install             # Install dependencies\n'
+      printf '  5. just test                # Run tests\n'
+      printf '  6. just vm                  # Spin up NixOS dev VM\n'
+      ;;
+    solidity)
+      printf '  1. just init                # Initialize Foundry project\n'
+      printf '  2. just build               # Build contracts\n'
+      printf '  3. just test                # Run tests\n'
+      printf '  4. install-certora          # Install Certora CLI\n'
+      printf '  5. just vm                  # Spin up NixOS dev VM\n'
+      ;;
+    typescript)
+      printf '  1. just init                # Initialize package.json with bun\n'
+      printf '  2. just install             # Install dependencies\n'
+      printf '  3. just test                # Run tests\n'
+      printf '  4. just vm                  # Spin up NixOS dev VM\n'
+      ;;
+    elixir)
+      printf "  1. just init                # Create Mix project, or 'just init-phx' for Phoenix\n"
+      printf '  2. just deps                # Fetch dependencies\n'
+      printf '  3. just test                # Run tests\n'
+      printf '  4. just vm                  # Spin up NixOS dev VM\n'
+      ;;
+    zig)
+      printf '  1. just init                # Create Zig executable project\n'
+      printf '  2. just build               # Build\n'
+      printf '  3. just test                # Run tests\n'
+      printf '  4. just vm                  # Spin up NixOS dev VM\n'
+      ;;
+    go)
+      printf '  1. just init github.com/you/repo # Initialize Go module\n'
+      printf '  2. just build                    # Build packages\n'
+      printf '  3. just test                     # Run tests\n'
+      printf '  4. just vm                       # Spin up NixOS dev VM\n'
+      ;;
+  esac
+
+  printf '\nRun `just` for the full task list.\n'
+}
+
+main() {
+  local template_name
+
+  parse_args "$@"
+
+  if [ "$LIST_ONLY" -eq 1 ]; then
+    list_languages
+    exit 0
+  fi
+
+  if [ -z "$LANGUAGE" ]; then
+    usage
+    exit 1
+  fi
+
+  template_name="$(template_for_language "$LANGUAGE")" || {
+    printf 'devinit: unknown language: %s\n\n' "$LANGUAGE" >&2
+    usage >&2
+    exit 1
+  }
+  LANGUAGE="$(canonical_language "$LANGUAGE")"
+
+  copy_template "$template_name"
+  git_setup
+  direnv_setup
+  print_next_steps
+}
+
+main "$@"

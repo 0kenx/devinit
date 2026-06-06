@@ -1,0 +1,8 @@
+[toolchain]
+channel = "nightly"
+components = [ "rust-src", "rust-analyzer", "rustc-codegen-cranelift", "miri", "llvm-tools", "rust-docs-json" ]
+targets = [
+    "wasm32-unknown-unknown",
+    "x86_64-pc-windows-gnu",
+  ]
+profile = "default"

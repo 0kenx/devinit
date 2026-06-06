@@ -1,0 +1,49 @@
+set export
+set shell := ["fish", "-c"]
+
+alias w := watch
+alias b := build
+alias r := release
+alias l := lint
+alias t := test
+alias c := coverage
+
+default:
+	just --list
+
+# ───── Build / Test ─────
+
+watch:
+	cargo watch
+
+build:
+	cargo build
+
+release: test
+	cargo build --release
+
+cross target: test
+	cargo zigbuild --target $target --release
+
+lint:
+	cargo clippy
+
+test:
+	cargo nextest run
+
+coverage:
+	cargo tarpaulin
+
+# ───── NixOS VM ─────
+
+# Build the NixOS dev VM (mounts project at /home/dev/project)
+vm-build:
+	nix build .#nixosConfigurations.dev-vm.config.system.build.vm
+
+# Build and start the dev VM (Ctrl-A x to exit nographic console)
+vm: vm-build
+	./result/bin/run-dev-vm-vm -nographic
+
+# SSH into the running dev VM
+vm-ssh:
+	ssh -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null dev@localhost

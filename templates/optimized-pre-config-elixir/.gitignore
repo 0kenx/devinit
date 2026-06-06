@@ -1,0 +1,34 @@
+# Mix / Elixir
+_build/
+deps/
+.elixir_ls/
+.lexical/
+*.beam
+*.ez
+erl_crash.dump
+.hex/
+.mix/
+.fetch
+
+# Phoenix
+priv/static/assets/
+priv/static/cache_manifest.json
+
+# Coverage
+cover/
+
+# Nix / direnv
+.direnv/
+.devenv/
+result
+result-*
+
+# Env / secrets
+.env
+.env.local
+
+# Editors
+.vscode/
+.idea/
+*.swp
+.DS_Store

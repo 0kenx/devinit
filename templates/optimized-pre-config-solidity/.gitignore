@@ -1,0 +1,47 @@
+# Foundry
+cache/
+out/
+broadcast/
+
+# Nix
+.direnv/
+.devenv/
+result
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Dependencies
+node_modules/
+lib/
+
+# Coverage
+coverage/
+lcov.info
+*.lcov
+
+# Gas reports
+.gas-snapshot
+
+# Slither
+.slither/
+slither.db.json
+
+# Certora
+.certora-venv/
+.certora_internal/
+emv-*.log
+emv-*.tac
+certora-build-*.zip

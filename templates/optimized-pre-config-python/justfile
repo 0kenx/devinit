@@ -1,0 +1,213 @@
+# Python Development Tasks
+
+# Show available commands
+help:
+    @just --list
+
+# Initialize a new Python project with uv
+init:
+    uv init
+    @echo "Project initialized with uv"
+
+# Create virtual environment
+venv:
+    uv venv
+    @echo "Virtual environment created at .venv/"
+    @echo "Activate with: source .venv/bin/activate"
+
+# Install dependencies
+install:
+    uv pip install -e ".[dev]"
+
+# Install from requirements.txt
+install-req:
+    uv pip install -r requirements.txt
+
+# Add a new dependency
+add PACKAGE:
+    uv pip install {{PACKAGE}}
+    uv pip freeze > requirements.txt
+
+# Update all dependencies
+update:
+    uv pip install --upgrade -e ".[dev]"
+
+# Sync dependencies (install/update to match lock file)
+sync:
+    uv pip sync
+
+# Run all tests
+test:
+    pytest
+
+# Run tests with verbose output
+test-verbose:
+    pytest -v
+
+# Run tests with coverage report
+test-cov:
+    pytest --cov=src --cov-report=html --cov-report=term
+
+# Run specific test file
+test-file FILE:
+    pytest {{FILE}} -v
+
+# Run tests matching a pattern
+test-match PATTERN:
+    pytest -k {{PATTERN}} -v
+
+# Run tests in parallel
+test-parallel:
+    pytest -n auto
+
+# Watch mode - run tests on file changes
+watch:
+    pytest-watch
+
+# Type check with mypy
+typecheck:
+    mypy src/
+
+# Lint with ruff
+lint:
+    ruff check .
+
+# Format code with ruff
+fmt:
+    ruff format .
+
+# Fix linting issues automatically
+fix:
+    ruff check --fix .
+
+# Run all checks (lint, typecheck, test)
+check: lint typecheck test
+    @echo "✓ All checks passed!"
+
+# Format and fix all issues
+format-all: fmt fix
+    @echo "✓ Code formatted and fixed!"
+
+# Clean build artifacts
+clean:
+    rm -rf build/
+    rm -rf dist/
+    rm -rf *.egg-info/
+    rm -rf .pytest_cache/
+    rm -rf .mypy_cache/
+    rm -rf .ruff_cache/
+    rm -rf htmlcov/
+    rm -rf .coverage
+    find . -type d -name __pycache__ -exec rm -rf {} +
+    find . -type f -name "*.pyc" -delete
+    @echo "✓ Cleaned build artifacts"
+
+# Clean including virtual environment
+clean-all: clean
+    rm -rf .venv/
+    rm -rf .uv-cache/
+    @echo "✓ Cleaned all artifacts and venv"
+
+# Build package
+build:
+    python -m build
+
+# Install package locally
+install-local:
+    pip install -e .
+
+# Run Python REPL with project context
+repl:
+    ipython
+
+# Run Python debugger
+debug FILE:
+    python -m ipdb {{FILE}}
+
+# Profile code performance
+profile FILE:
+    python -m cProfile -o profile.prof {{FILE}}
+    @echo "Profile saved to profile.prof"
+
+# View profile results
+profile-view:
+    python -c "import pstats; p = pstats.Stats('profile.prof'); p.sort_stats('cumulative'); p.print_stats(20)"
+
+# Generate documentation
+docs:
+    cd docs && sphinx-build -b html . _build/html
+    @echo "Documentation built in docs/_build/html/"
+
+# Serve documentation locally
+docs-serve:
+    cd docs/_build/html && python -m http.server
+
+# Create new module
+new-module NAME:
+    @mkdir -p src/{{NAME}}
+    @touch src/{{NAME}}/__init__.py
+    @echo "Created src/{{NAME}}/"
+
+# Create new test file
+new-test NAME:
+    @echo "import pytest" > tests/test_{{NAME}}.py
+    @echo "" >> tests/test_{{NAME}}.py
+    @echo "def test_{{NAME}}():" >> tests/test_{{NAME}}.py
+    @echo "    assert True" >> tests/test_{{NAME}}.py
+    @echo "Created tests/test_{{NAME}}.py"
+
+# Run security audit
+audit:
+    uv pip list --format=json | python -m pip_audit --stdin
+
+# Generate requirements.txt from current environment
+freeze:
+    uv pip freeze > requirements.txt
+    @echo "requirements.txt updated"
+
+# Initialize project structure
+setup-project NAME:
+    @mkdir -p src/{{NAME}}
+    @mkdir -p tests
+    @echo "# {{NAME}}" > src/{{NAME}}/__init__.py
+    @echo '"""{{NAME}} package"""' >> src/{{NAME}}/__init__.py
+    @echo "" >> src/{{NAME}}/__init__.py
+    @echo '__version__ = "0.1.0"' >> src/{{NAME}}/__init__.py
+    @touch tests/__init__.py
+    @echo "import pytest" > tests/test_{{NAME}}.py
+    @echo "from src.{{NAME}} import __version__" >> tests/test_{{NAME}}.py
+    @echo "" >> tests/test_{{NAME}}.py
+    @echo "def test_version():" >> tests/test_{{NAME}}.py
+    @echo '    assert __version__ == "0.1.0"' >> tests/test_{{NAME}}.py
+    @echo "Project structure created for {{NAME}}"
+    @echo "Run: just install"
+
+# Full CI pipeline
+ci: clean lint typecheck test-cov
+    @echo "✓ CI pipeline completed!"
+
+# Development workflow - format, check, test
+dev: format-all check
+    @echo "✓ Development checks passed!"
+
+# Quick test - run only fast tests
+quick:
+    pytest -m "not slow" -x
+
+# Run interactive Python with project imports
+shell:
+    python -i -c "import sys; sys.path.insert(0, 'src')"
+
+# ───── NixOS VM ─────
+
+# Build the NixOS dev VM (mounts project at /home/dev/project)
+vm-build:
+    nix build .#nixosConfigurations.dev-vm.config.system.build.vm
+
+# Build and start the dev VM (Ctrl-A x to exit nographic console)
+vm: vm-build
+    ./result/bin/run-dev-vm-vm -nographic
+
+# SSH into the running dev VM
+vm-ssh:
+    ssh -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null dev@localhost

@@ -1,0 +1,28 @@
+# Go build outputs
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go test / coverage
+*.test
+*.out
+coverage.html
+
+# Local module cache (set by flake shellHook)
+.gopath/
+.gocache/
+
+# Nix / direnv
+.direnv/
+.devenv/
+result
+result-*
+
+# Editors
+.vscode/
+.idea/
+*.swp
+.DS_Store

@@ -1,0 +1,190 @@
+# Solidity/Foundry Development Tasks
+
+# Show available commands
+help:
+    @just --list
+
+# Initialize a new Foundry project
+init:
+    forge init --force
+
+# Install dependencies
+install:
+    forge install
+
+# Update dependencies
+update:
+    forge update
+
+# Build contracts
+build:
+    forge build
+
+# Build with size optimization
+build-optimized:
+    forge build --optimize --optimizer-runs 1000000
+
+# Clean build artifacts
+clean:
+    forge clean
+    rm -rf cache out
+
+# Run all tests
+test:
+    forge test
+
+# Run tests with verbosity
+test-verbose:
+    forge test -vvv
+
+# Run tests with gas reporting
+test-gas:
+    forge test --gas-report
+
+# Run tests with coverage
+coverage:
+    forge coverage
+
+# Run tests and generate detailed coverage report
+coverage-report:
+    forge coverage --report lcov
+    @echo "Coverage report generated: lcov.info"
+
+# Watch mode - rebuild on file changes
+watch:
+    forge build --watch
+
+# Watch mode - run tests on file changes
+watch-test:
+    forge test --watch
+
+# Format Solidity code
+fmt:
+    forge fmt
+
+# Check formatting without modifying files
+fmt-check:
+    forge fmt --check
+
+# Note: Install slither-analyzer for security analysis:
+# nix-shell -p slither-analyzer
+# Then run: slither .
+
+# Create a gas snapshot
+snapshot:
+    forge snapshot
+
+# Compare gas usage with snapshot
+snapshot-diff:
+    forge snapshot --diff
+
+# Start local Ethereum node
+anvil:
+    anvil
+
+# Start anvil with forked mainnet
+anvil-fork:
+    anvil --fork-url ${ETH_RPC_URL}
+
+# Deploy to local network
+deploy-local:
+    forge script script/Deploy.s.sol --rpc-url http://localhost:8545 --broadcast
+
+# Deploy to testnet (sepolia)
+deploy-sepolia:
+    forge script script/Deploy.s.sol --rpc-url ${SEPOLIA_RPC_URL} --broadcast --verify
+
+# Verify contract on Etherscan
+verify CONTRACT ADDRESS:
+    forge verify-contract {{ADDRESS}} {{CONTRACT}} --etherscan-api-key ${ETHERSCAN_API_KEY}
+
+# Open Solidity REPL
+repl:
+    chisel
+
+# Run specific test by name
+test-match TEST:
+    forge test --match-test {{TEST}} -vvv
+
+# Run tests for specific contract
+test-contract CONTRACT:
+    forge test --match-contract {{CONTRACT}} -vvv
+
+# Show contract storage layout
+storage CONTRACT:
+    forge inspect {{CONTRACT}} storage-layout
+
+# Show contract ABI
+abi CONTRACT:
+    forge inspect {{CONTRACT}} abi
+
+# Show contract bytecode
+bytecode CONTRACT:
+    forge inspect {{CONTRACT}} bytecode
+
+# Flatten contract for verification
+flatten CONTRACT:
+    forge flatten {{CONTRACT}}
+
+# Lint and fix all issues
+lint:
+    forge fmt
+    @echo "Formatted Solidity files"
+
+# Run all checks (build, test, format)
+check: fmt-check build test
+    @echo "✓ All checks passed!"
+
+# Full CI pipeline
+ci: clean fmt-check build test coverage snapshot
+    @echo "✓ CI pipeline completed!"
+
+# Create a new contract template
+new-contract NAME:
+    @echo "// SPDX-License-Identifier: MIT" > src/{{NAME}}.sol
+    @echo "pragma solidity ^0.8.24;" >> src/{{NAME}}.sol
+    @echo "" >> src/{{NAME}}.sol
+    @echo "contract {{NAME}} {" >> src/{{NAME}}.sol
+    @echo "    constructor() {}" >> src/{{NAME}}.sol
+    @echo "}" >> src/{{NAME}}.sol
+    @echo "Created src/{{NAME}}.sol"
+
+# ───── Certora ─────
+
+# Install / upgrade Certora CLI into .certora-venv
+install-certora:
+    install-certora
+
+# Run a Certora verification spec (usage: just certora spec/MyContract.conf)
+certora SPEC:
+    . .certora-venv/bin/activate && certoraRun {{SPEC}}
+
+# ───── NixOS VM ─────
+
+# Build the NixOS dev VM (mounts project at /home/dev/project)
+vm-build:
+    nix build .#nixosConfigurations.dev-vm.config.system.build.vm
+
+# Build and start the dev VM (Ctrl-A x to exit nographic console)
+vm: vm-build
+    ./result/bin/run-dev-vm-vm -nographic
+
+# SSH into the running dev VM
+vm-ssh:
+    ssh -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null dev@localhost
+
+# Create a new test template
+new-test NAME:
+    @echo "// SPDX-License-Identifier: MIT" > test/{{NAME}}.t.sol
+    @echo "pragma solidity ^0.8.24;" >> test/{{NAME}}.t.sol
+    @echo "" >> test/{{NAME}}.t.sol
+    @echo 'import {Test} from "forge-std/Test.sol";' >> test/{{NAME}}.t.sol
+    @echo "" >> test/{{NAME}}.t.sol
+    @echo "contract {{NAME}}Test is Test {" >> test/{{NAME}}.t.sol
+    @echo "    function setUp() public {}" >> test/{{NAME}}.t.sol
+    @echo "" >> test/{{NAME}}.t.sol
+    @echo "    function test_Example() public {" >> test/{{NAME}}.t.sol
+    @echo "        assertTrue(true);" >> test/{{NAME}}.t.sol
+    @echo "    }" >> test/{{NAME}}.t.sol
+    @echo "}" >> test/{{NAME}}.t.sol
+    @echo "Created test/{{NAME}}.t.sol"

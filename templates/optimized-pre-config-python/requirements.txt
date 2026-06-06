@@ -1,0 +1,4 @@
+# Add your project dependencies here
+# Example:
+# requests>=2.31.0
+# pydantic>=2.5.0

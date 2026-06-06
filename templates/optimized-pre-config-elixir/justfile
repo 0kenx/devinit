@@ -1,0 +1,90 @@
+# Elixir development tasks
+
+set shell := ["fish", "-c"]
+
+default:
+    @just --list
+
+# ───── Project init ─────
+
+# Create a new Mix project in the current directory
+init NAME=`basename $PWD`:
+    mix new . --app {{NAME}}
+
+# Create a new Phoenix project
+init-phx NAME=`basename $PWD`:
+    mix archive.install hex phx_new --force
+    mix phx.new . --app {{NAME}} --install
+
+# ───── Deps / Build ─────
+
+# Install/sync dependencies
+deps:
+    mix deps.get
+
+# Compile project
+build:
+    mix compile
+
+# Compile with warnings as errors
+build-strict:
+    mix compile --warnings-as-errors
+
+# Clean build artifacts
+clean:
+    mix clean
+    rm -rf _build deps
+
+# ───── Run ─────
+
+# Start interactive Elixir REPL inside the project
+iex:
+    iex -S mix
+
+# Run the project's main module
+run:
+    mix run --no-halt
+
+# ───── Test / Lint / Format ─────
+
+# Run tests
+test:
+    mix test
+
+# Run tests with coverage
+test-cov:
+    mix test --cover
+
+# Format all sources
+fmt:
+    mix format
+
+# Check formatting (CI)
+fmt-check:
+    mix format --check-formatted
+
+# Run Credo linter (install dep first if missing)
+lint:
+    mix credo --strict
+
+# Run dialyzer
+dialyzer:
+    mix dialyzer
+
+# Full CI pipeline
+check: fmt-check build-strict test
+    @echo "✓ All checks passed!"
+
+# ───── NixOS VM ─────
+
+# Build the NixOS dev VM (mounts project at /home/dev/project)
+vm-build:
+    nix build .#nixosConfigurations.dev-vm.config.system.build.vm
+
+# Build and start the dev VM (Ctrl-A x to exit nographic console)
+vm: vm-build
+    ./result/bin/run-dev-vm-vm -nographic
+
+# SSH into the running dev VM
+vm-ssh:
+    ssh -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null dev@localhost

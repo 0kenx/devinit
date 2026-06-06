@@ -1,0 +1,86 @@
+# TypeScript + Bun development tasks
+
+set shell := ["fish", "-c"]
+
+default:
+    @just --list
+
+# ───── Project init ─────
+
+# Initialise a new Bun project in the current directory
+init:
+    bun init -y
+
+# Install dependencies from package.json
+install:
+    bun install
+
+# Add a runtime dependency
+add PKG:
+    bun add {{PKG}}
+
+# Add a dev dependency
+add-dev PKG:
+    bun add -d {{PKG}}
+
+# ───── Run / Build ─────
+
+# Run a TS file with Bun
+run FILE:
+    bun run {{FILE}}
+
+# Run package.json "start" script
+start:
+    bun start
+
+# Build the project (calls package.json "build")
+build:
+    bun run build
+
+# Watch mode
+watch:
+    bun --watch run src/index.ts
+
+# ───── Test / Lint / Format ─────
+
+# Run tests
+test:
+    bun test
+
+# Run tests in watch mode
+test-watch:
+    bun test --watch
+
+# Type-check without emitting
+typecheck:
+    tsc --noEmit
+
+# Lint with Biome
+lint:
+    biome lint .
+
+# Format with Biome
+fmt:
+    biome format --write .
+
+# Lint + format check (CI)
+check: typecheck
+    biome check .
+
+# Apply Biome fixes
+fix:
+    biome check --write .
+
+# ───── NixOS VM ─────
+
+# Build the NixOS dev VM (mounts project at /home/dev/project)
+vm-build:
+    nix build .#nixosConfigurations.dev-vm.config.system.build.vm
+
+# Build and start the dev VM (Ctrl-A x to exit nographic console)
+vm: vm-build
+    ./result/bin/run-dev-vm-vm -nographic
+
+# SSH into the running dev VM
+vm-ssh:
+    ssh -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null dev@localhost

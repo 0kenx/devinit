@@ -1,0 +1,82 @@
+# Zig development tasks
+
+set shell := ["fish", "-c"]
+
+default:
+    @just --list
+
+# ───── Project init ─────
+
+# Create a new Zig executable project in the current directory
+init:
+    zig init
+
+# Create a new Zig library project
+init-lib:
+    zig init-lib
+
+# ───── Build / Run ─────
+
+# Build the project
+build:
+    zig build
+
+# Build release-safe (optimized + safety checks)
+release:
+    zig build -Doptimize=ReleaseSafe
+
+# Build release-fast (max speed, no safety checks)
+release-fast:
+    zig build -Doptimize=ReleaseFast
+
+# Build release-small (smallest binary)
+release-small:
+    zig build -Doptimize=ReleaseSmall
+
+# Run the project
+run:
+    zig build run
+
+# Run with arguments
+run-args *ARGS:
+    zig build run -- {{ARGS}}
+
+# ───── Test / Format ─────
+
+# Run all tests
+test:
+    zig build test
+
+# Run tests with verbose output
+test-verbose:
+    zig build test --summary all
+
+# Format Zig sources
+fmt:
+    zig fmt .
+
+# Check formatting (CI)
+fmt-check:
+    zig fmt --check .
+
+# Clean build artifacts
+clean:
+    rm -rf zig-out zig-cache .zig-cache
+
+# Full CI pipeline
+check: fmt-check build test
+    @echo "✓ All checks passed!"
+
+# ───── NixOS VM ─────
+
+# Build the NixOS dev VM (mounts project at /home/dev/project)
+vm-build:
+    nix build .#nixosConfigurations.dev-vm.config.system.build.vm
+
+# Build and start the dev VM (Ctrl-A x to exit nographic console)
+vm: vm-build
+    ./result/bin/run-dev-vm-vm -nographic
+
+# SSH into the running dev VM
+vm-ssh:
+    ssh -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null dev@localhost
