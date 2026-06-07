@@ -52,12 +52,6 @@ let
     exec = ''exec node "$INSTALL_DIR/node_modules/@openai/codex/bin/codex.js" "$@"'';
   };
 
-  amp = mkLazyNpm {
-    binName = "amp";
-    pkgName = "@sourcegraph/amp";
-    exec = ''exec "$INSTALL_DIR/node_modules/.bin/amp" "$@"'';
-  };
-
   apalache = stdenv.mkDerivation rec {
     pname = "apalache";
     version = "0.52.2";
@@ -89,16 +83,15 @@ let
   };
 in
 {
-  inherit agent-browser codex amp apalache;
+  inherit agent-browser codex apalache;
 
   # Full AI coding-tool kit, mirroring nixos/modules/ai/coding.nix.
-  # claude-code and opencode are native nixpkgs; codex and amp are npm wrappers
-  # so they stay on `@latest`.
+  # claude-code and opencode are native nixpkgs; codex is an npm wrapper
+  # so it stays on `@latest`.
   aiCodingTools = [
     pkgs.claude-code
     pkgs.opencode
     codex
-    amp
     agent-browser
   ];
 
