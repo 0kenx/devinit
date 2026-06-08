@@ -82,7 +82,7 @@
 
             # Solidity LSP deps
             nodejs_24
-            nodePackages.vscode-langservers-extracted
+            vscode-langservers-extracted
 
             # Dev tools
             lcov jq

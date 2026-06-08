@@ -22,7 +22,7 @@
               nodejs_24
               typescript
               biome
-              nodePackages.typescript-language-server
+              typescript-language-server
             ];
           })
         ];
@@ -48,12 +48,12 @@
             # Languages / formatting / linting
             typescript
             biome
-            nodePackages.prettier
-            nodePackages.eslint
+            prettier
+            eslint
 
             # LSPs
-            nodePackages.typescript-language-server
-            nodePackages.vscode-langservers-extracted
+            typescript-language-server
+            vscode-langservers-extracted
 
             # Editor / runner
             neovim just
