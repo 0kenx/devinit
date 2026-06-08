@@ -60,7 +60,7 @@ in
   environment.systemPackages =
     (with pkgs; [
       git vim htop curl wget jq gh
-      nodejs_24
+      nodejs_26
       just
       gcc gnumake pkg-config openssl
     ])

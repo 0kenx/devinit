@@ -11,7 +11,7 @@ let
     , exec
     }:
     pkgs.writeShellScriptBin binName ''
-      export PATH="${pkgs.nodejs_24}/bin:$PATH"
+      export PATH="${pkgs.nodejs_26}/bin:$PATH"
       export HOME="''${HOME:-/tmp}"
       export npm_config_cache="$HOME/.cache/${binName}-npm"
 

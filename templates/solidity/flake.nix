@@ -81,7 +81,7 @@
             python313Packages.uv
 
             # Solidity LSP deps
-            nodejs_24
+            nodejs_26
             vscode-langservers-extracted
 
             # Dev tools

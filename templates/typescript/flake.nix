@@ -19,7 +19,7 @@
             hostname = "dev-vm";
             extraPackages = pkgs: with pkgs; [
               bun
-              nodejs_24
+              nodejs_26
               typescript
               biome
               typescript-language-server
@@ -43,7 +43,7 @@
           buildInputs = (with pkgs; [
             # Bun is the primary runtime; Node provided for compat with tools.
             bun
-            nodejs_24
+            nodejs_26
 
             # Languages / formatting / linting
             typescript
