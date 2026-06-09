@@ -72,8 +72,8 @@ in
   programs.nix-ld.enable = true;
   programs.nix-ld.libraries = with pkgs; [
     stdenv.cc.cc.lib zlib openssl curl libGL
-    xorg.libX11 xorg.libXcomposite xorg.libXdamage xorg.libXext
-    xorg.libXfixes xorg.libXrandr xorg.libxcb
+    libx11 libxcomposite libxdamage libxext
+    libxfixes libxrandr libxcb
     alsa-lib at-spi2-atk at-spi2-core atk cairo cups dbus expat
     gdk-pixbuf glib gtk3 libdrm libxkbcommon mesa nspr nss pango systemd
   ];

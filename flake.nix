@@ -34,9 +34,13 @@
             dontBuild = true;
             doCheck = true;
 
+            postPatch = ''
+              patchShebangs devinit
+            '';
+
             checkPhase = ''
               runHook preCheck
-              bash -n devinit
+              ${pkgs.bash}/bin/bash -n devinit
               ./devinit --list >/dev/null
               runHook postCheck
             '';
